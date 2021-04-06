@@ -8,13 +8,10 @@ import time
 # import pyswarms as ps
 sys.path.insert(1, '../coronavirus_optimization/')
 from matplotlib import pyplot as plt
-from optimizationFunctionsCoronavirus4 import splitVaccineAmongAgeGroups, uniformSampleSimplex
-from coronavirusMainFunctions import coronavirusEqs_withHospitalizationsAndICU_withVaccine2D, findBetaNewModel_eqs2_withHosp4
-from coronavirusMainFunctions import coronavirusEqs_withHospitalizationsAndICU_withVaccine2DBis
-from coronavirusMainFunctions import findBetaModel_coronavirusEqs_withHospitalizationsAndICU_withVaccine2DBis
+from coronavirusMainFunctions_twoDoses import splitVaccineAmongAgeGroups, uniformSampleSimplex
+from coronavirusMainFunctions_twoDoses import coronavirusEqs_withHospitalizationsAndICU_withVaccine2DBis
+from coronavirusMainFunctions_twoDoses import findBetaModel_coronavirusEqs_withHospitalizationsAndICU_withVaccine2DBis
 from saveLoadFunctions import saveResults, loadResults
-# from cvxopt import matrix
-# from cvxopt import solvers
 
 
 
@@ -108,14 +105,9 @@ def skimOffExcessVaccine2D(fracVacs, numVaccinesAvailable, numVaccineGroups, tot
 
 
     for ivals in range(numVaccineGroups):
-        # calculate the number of people vaccinated both with one or tow doses per vaccine group:
-        ## JE: SHOULDN'T THIS BE THE NUMBER OF *UNVACCINATED* IN EACH VACCINE GROUP?
-        ##     TOTAL NUMBER VACCINATED IS (numPeopleVaccinated1d[ivals] + numPeopleVaccinated2d[ivals])
-        ##     SO TOTAL NUMBER UNVACCINATED IS WHAT "temp" is...
-        ##          ( totalPopByVaccineGroup[ivals]  - (numPeopleVaccinated1d[ivals] + numPeopleVaccinated2d[ivals]) )
-        ##    AND THEN WE'D WANT TO RESET TO ZERO IF NEGATIVE....
+
         temp = ((numPeopleVaccinated1d[ivals] + numPeopleVaccinated2d[ivals]) - totalPopByVaccineGroup[ivals])
-        ## BUT...WHERE IS "temp" USED BELOW?? I DON'T THINK IT'S NECESSARY AT ALL.
+
 
         #case 1: number of people vaccinated with two doses > pop in that group
         if (numPeopleVaccinated2d[ivals] > totalPopByVaccineGroup[ivals]):
@@ -123,17 +115,14 @@ def skimOffExcessVaccine2D(fracVacs, numVaccinesAvailable, numVaccineGroups, tot
             excessVaccine[ivals] = 2*(numPeopleVaccinated2d[ivals] - totalPopByVaccineGroup[ivals]) + \
                                    numPeopleVaccinated1d[ivals]
             numPeopleVaccinated2d[ivals] = totalPopByVaccineGroup[ivals]     #skim off the excess vaccine from the 2D group
-            ## JE: THE PROBLEM WITH THE NEXT LINE IS THAT WE ALREADY REASSIGNED numPeopleVaccinated2d to equal
-            ## totalPopByVaccineGroup so the term in the parentheses is zero.
-            ## We should assign excessVaccine *before* reassigning numPeopleVaccinated2d
-            # excessVaccine[ivals] = 2*(numPeopleVaccinated2d[ivals] - totalPopByVaccineGroup[ivals]) + numPeopleVaccinated1d[ivals]
+
             numPeopleVaccinated1d[ivals] = 0  # set to 0 the number of people getting 1D
 
         #case 2: the sum of the number of people vaccinated with one and two doses > pop in that group, in this case
         # keep all of the ones vaccinated with two doses and skim off the excess in the one dose group
         if ((numPeopleVaccinated1d[ivals] + numPeopleVaccinated2d[ivals]) > totalPopByVaccineGroup[ivals]):
             excessVaccine[ivals] = numPeopleVaccinated1d[ivals] - (totalPopByVaccineGroup[ivals] - numPeopleVaccinated2d[ivals])
-            ## JE: CLEARER TO ME TO DEFINE IT THIS WAY, BELOW...
+
             excessVaccine[ivals] = (numPeopleVaccinated1d[ivals] + numPeopleVaccinated2d[ivals] - totalPopByVaccineGroup[ivals] )
             numPeopleVaccinated1d[ivals] = totalPopByVaccineGroup[ivals] - numPeopleVaccinated2d[ivals]
         # else:
@@ -176,35 +165,6 @@ def skimOffExcessVaccine2DBis(fracVacs, numVaccinesAvailable, numVaccineGroups, 
     # print(excessVaccine)
     return [newarray, excessVaccine]
 
-# def skimOffExcessVaccine2D_3(fracVacs, numVaccinesAvailable, numVaccineGroups, totalPopByVaccineGroup):
-#     '''
-#     This function removes the excess vaccine in each vaccination group so that we do not vaccinate more people than what
-#     there is in each vaccination group. It does it in the following way:
-#
-#     '''
-#
-#     #calculate the number of people vaccinated both with one or tow doses per vaccine group:
-#     [numPeopleVaccinated1d, numPeopleVaccinated2d] = fromFracVacsToNumberPeopleVaccinated2d(fracVacs, numVaccinesAvailable)
-#     # excessVaccine = np.zeros(numVaccineGroups)
-#
-#     newarray = np.zeros((2,5))
-#     EPS = 0.5
-#     totVac = numPeopleVaccinated1d + numPeopleVaccinated2d
-#     for ivals in range(numVaccineGroups):
-#         if (totVac[ivals] - totalPop5[ivals]) < EPS:
-#            newarray[0,ivals] = numPeopleVaccinated1d[ivals]
-#            newarray[1,ivals] = numPeopleVaccinated2d[ivals]
-#         else:
-#             f1 = numPeopleVaccinated1d[ivals]/totVac[ivals]
-#             f2 = numPeopleVaccinated2d[ivals]/totVac[ivals]
-#
-#             newarray[0, ivals] = f1*totalPop5[ivals]
-#             newarray[1, ivals] = f2*totalPop5[ivals]
-#
-#     excessVaccine = numVaccinesAvailable - np.sum(newarray)
-#     return [newarray, excessVaccine]
-
-
 
 
 def objectiveFunction2D(fracVacs, extraParams):
@@ -220,31 +180,17 @@ def objectiveFunction2D(fracVacs, extraParams):
     # print(numVaccinesAvailable)
     # print(tspan)
     [newarray, excessVaccine] = skimOffExcessVaccine2DBis(fracVacs, numVaccinesAvailable, numVaccineGroups, totalPopByVaccineGroup)
-    # print(newarray)
-    # print('sum people vac', np.sum(newarray))
-    # print('newarray', newarray)
-    # print(newarray[1,:])
-    # print(np.sum(np.divide(newarray, numVaccinesAvailable)))
 
-    # newarray = repairNumPeopleToVaccinate(newarray, numVaccinesAvailable, totalPopByAgeGroup)
 
     numVaccinatedAgeGroup1d = splitVaccineAmongAgeGroups(newarray[0,:], groupFracs, totalPopByAgeGroup)
     numVaccinatedAgeGroup2d = splitVaccineAmongAgeGroups(newarray[1,:], groupFracs, totalPopByAgeGroup)
 
-    # print(numVaccinatedAgeGroup1d)
-    # print(numVaccinatedAgeGroup2d)
-
-    # print((np.sum(newarray[0,:]) + 2*np.sum(newarray[1,:]))/numVaccinesAvailable)
-    # [totalInfections, totalSymptomaticInfections, totalDeaths, maxHosp, maxICU] = \
-    #     runVaccination2DPulse4(deathRate, y0, numAgeGroups, numDosesPerWeek,
-    #                           numVaccinatedAgeGroup1d, numVaccinatedAgeGroup2d, numVaccinesAvailable, paramsODE, tspan)
 
     [totalInfections, totalSymptomaticInfections, totalDeaths, maxHosp, maxICU] = \
         runVaccination2DPulse6(deathRate, y0, groupFracs, numAgeGroups,  numDosesPerWeek,
                           numVaccinatedAgeGroup1d, numVaccinatedAgeGroup2d, numVaccineGroups, numVaccinesAvailable, paramsODE,
                           tspan)
-    # print(np.sum(excessVaccine))
-    # print([fracVacs[0, :], fracVacs[1, :], newarray[0, :], newarray[1,:], excessVaccine, totalInfections, totalSymptomaticInfections, totalDeaths, maxHosp, maxICU])
+
     mytempList = [fracVacs[0, :].tolist(), fracVacs[1, :].tolist(), newarray[0, :].tolist(), newarray[1,:].tolist(), [np.sum(excessVaccine), totalInfections, totalSymptomaticInfections, totalDeaths, maxHosp, maxICU]]
     flat_list = [item for sublist in mytempList for item in sublist]
     return flat_list
@@ -659,9 +605,7 @@ def runVaccination2DPulse6(deathRate, y0, groupFracs, numAgeGroups,  numDosesPer
                     # bookeeping
                     total1Dgiven += (lastWeekTemp)
                     realVacGiven1D[mvals] += np.sum(peopleVac1)
-        # print('actual weeks after 1 and 2 D', actualWeeks)
-        # print('numWeeksSinceBegSimulation', numWeeksSinceBegSimulation)
-        # print('total infections', np.sum(initCond[33 , :]))
+
         #run the model for the rest of the weeks:
         ############################### run the model here  ###############################
         numOfWeeksRemaining = ((numberOfWeeksSpan - numWeeksSinceBegSimulation))
@@ -675,12 +619,8 @@ def runVaccination2DPulse6(deathRate, y0, groupFracs, numAgeGroups,  numDosesPer
                          args=(paramsODE,))
             timeSeries = np.vstack((timeSeries, out[:, :]))
         timeSeries = timeSeries[1:, :]
-        # tempX = out[-1,:].reshape(34, numAgeGroups)
-        # print('total infections', np.sum(tempX[33, :]))
         numVaccinesGiven = total1Dgiven + total2Dgiven
-        # print(numVaccinesGiven)
-        # print(realVacGiven1D)
-        # print(realVacGiven)
+
 
     else:
         # print('instantaneous vaccination')
@@ -846,8 +786,7 @@ def repairVector2DBothSides(fracVacs):
     '''
     fracVacs = fracVacs.reshape(10)
     fracVacs[fracVacs < 0] = 0  #change negative entries to 0
-    ## JE: THE ABOVE LINE I COULDN'T GET TO WORK. I UNDERSTAND WHAT IT'S SUPPOSED TO DO
-    ## BUT IT DIDN'T DO IT ON MY COMPUTER.
+
     vectorSum = np.sum(fracVacs)
     # print(vectorSum)
     # if vectorSum > 1: #check if the sum of entries is bigger than 1, if it is, repair it so that it is exactly one
@@ -940,11 +879,11 @@ def objectiveFunction_NM2D(fracVacs, extraParamsNM):
     if repairFunOpt == 0:
         # newFracVacs = repairVector2DBothSides(fracVacs)
         newFracVacs = repairVector2D(fracVacs)
-    elif repairFunOpt == 1:
-        newFracVacs = repairVector2D_quadratic_subproblem_INEQUALITY(fracVacs, numVaccinesAvailable, totalPopByVaccineGroup)
-    elif repairFunOpt == 2:
-        newFracVacs = repairVector2D_quadratic_subproblem(fracVacs, numVaccinesAvailable,
-                                                                     totalPopByVaccineGroup)
+    # elif repairFunOpt == 1:
+    #     newFracVacs = repairVector2D_quadratic_subproblem_INEQUALITY(fracVacs, numVaccinesAvailable, totalPopByVaccineGroup)
+    # elif repairFunOpt == 2:
+    #     newFracVacs = repairVector2D_quadratic_subproblem(fracVacs, numVaccinesAvailable,
+    #                                                                  totalPopByVaccineGroup)
 
     else:
         print('wrong repair function value')
@@ -981,10 +920,10 @@ def objectiveFunction_PS2D(fracs, extraParamsPS):
         if repairFunOpt == 0:
             # newFracVacs = repairVector2DBothSides(fracVacs)
             newFracVacs = repairVector2D(fracVacs)
-        elif repairFunOpt == 1:
-
-            newFracVacs = repairVector2D_quadratic_subproblem_INEQUALITY(fracVacs, numVaccinesAvailable,
-                                                                         totalPopByVaccineGroup)
+        # elif repairFunOpt == 1:
+        #
+        #     newFracVacs = repairVector2D_quadratic_subproblem_INEQUALITY(fracVacs, numVaccinesAvailable,
+        #                                                                  totalPopByVaccineGroup)
         else:
             print('wrong repair function value')
             sys.exit()
@@ -1023,9 +962,7 @@ def createProRataVac2D(fracOfTotalPopulationPerVaccineGroup, numVaccinesAvailabl
         ## equals numVaccines2d and equals the excessVaccine*fraction.
         numPeopleVaccinatedWith2D = numVaccines2d
         numPeopleVaccinatedWith1D = totalPopByVaccineGroup - numPeopleVaccinatedWith2D
-        # print(numPeopleVaccinatedWith1D)
-        # print(numPeopleVaccinatedWith2D)
-        # print(numPeopleVaccinatedWith1D + numPeopleVaccinatedWith2D)
+     
         proRata1D = numPeopleVaccinatedWith1D/numVaccinesAvailable
         ## the proRata vector is _number of vaccines_ which is why
         ## the 2D is multiplied by two.
