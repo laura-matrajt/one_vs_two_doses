@@ -1,4 +1,4 @@
-##Optimizing vaccine allocation for COVID-19 vaccines shows the potential role of single-dose vaccination.
+# Optimizing vaccine allocation for COVID-19 vaccines shows the potential role of single-dose vaccination
 
 Repository for the manuscript entitled "Optimizing vaccine allocation for COVID-19 vaccines shows the potential role of single-dose vaccination."
 that has been accepted in Nature Communications.
@@ -7,7 +7,7 @@ Pre-print available at:
 
 https://www.medrxiv.org/content/10.1101/2020.12.31.20249099v4
 
-#Abstract:
+## Abstract
 
 Most COVID-19 vaccines require two doses, however with limited vaccine supply, policymakers are considering single-dose 
 vaccination as an alternative strategy. Using a mathematical model combined with optimization algorithms, we determined 
