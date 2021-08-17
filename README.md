@@ -1,11 +1,9 @@
 # Optimizing vaccine allocation for COVID-19 vaccines shows the potential role of single-dose vaccination
 
 Repository for the manuscript entitled "Optimizing vaccine allocation for COVID-19 vaccines shows the potential role of single-dose vaccination."
-that has been accepted in Nature Communications.
+published in Nature Communications.
 
-Pre-print available at:
-
-https://www.medrxiv.org/content/10.1101/2020.12.31.20249099v4
+https://www.nature.com/articles/s41467-021-23761-1
 
 ## Abstract
 
